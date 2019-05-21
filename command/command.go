@@ -1,4 +1,4 @@
-package lib
+package command
 
 import (
 	"fmt"
@@ -22,10 +22,10 @@ type Options struct {
 
 func (c *Command) Check() error {
 	options := Options{
-		Help: `👋 'gqlmerge' is the tool to merge & stitch *.graphql files and generate a Graphql schema
+		Help: `👋 'gqlmerge' is the tool to merge & stitch GraphQL files and generate a GraphQL schema
 Author : Woonki Moon <woonki.moon@gmail.com>
 
-Usage:	gqlmerge [PATH] [OUTPUT.graphql]
+Usage:	gqlmerge [PATH] [OUTPUT]
 
 e.g.
 
@@ -40,7 +40,7 @@ Options:
 		NotEnoughArgs:    "❌ Not enough arguments",
 		OutputFileNeeded: "❌ Output file argument is needed",
 		WrongOption:      "❌ Wrong options",
-		Version:          "v0.1.4",
+		Version:          "v0.1.5",
 	}
 
 	// check the number of args

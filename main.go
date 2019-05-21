@@ -5,11 +5,12 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/mattdamon108/gqlmerge/command"
 	gql "github.com/mattdamon108/gqlmerge/lib"
 )
 
 func main() {
-	cmd := gql.Command{Args: os.Args}
+	cmd := command.Command{Args: os.Args}
 	if err := cmd.Check(); err != nil {
 		fmt.Println(err)
 		os.Exit(0)
@@ -28,6 +29,6 @@ func main() {
 
 		fmt.Printf("👍 Successfully generated '%s'", os.Args[2])
 	} else {
-		fmt.Printf("😳 Not found any *.graphql files in %s", os.Args[1])
+		fmt.Printf("😳 Not found any GraphQL files in %s", os.Args[1])
 	}
 }
