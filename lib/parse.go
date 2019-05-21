@@ -48,6 +48,9 @@ func (s *Schema) ParseSchema(l *Lexer) {
 			for l.Peek() != '}' {
 				p := Prop{}
 				p.Name = l.ConsumeIdent()
+
+				p.Args = ParseArgument(l)
+
 				l.ConsumeToken(':')
 
 				if l.Peek() == '[' {
@@ -78,6 +81,15 @@ func (s *Schema) ParseSchema(l *Lexer) {
 						p.Null = true
 					}
 				}
+
+				if l.Peek() == '@' {
+					l.ConsumeToken('@')
+					l.ConsumeDirective()
+					d := Directive{l.GetBuffer()}
+					l.ConsumeWhitespace()
+					p.Directive = &d
+				}
+
 				i.Props = append(i.Props, &p)
 			}
 
@@ -137,6 +149,15 @@ func (s *Schema) ParseSchema(l *Lexer) {
 						p.Null = true
 					}
 				}
+
+				if l.Peek() == '@' {
+					l.ConsumeToken('@')
+					l.ConsumeDirective()
+					d := Directive{l.GetBuffer()}
+					l.ConsumeWhitespace()
+					p.Directive = &d
+				}
+
 				i.Props = append(i.Props, &p)
 			}
 
@@ -147,63 +168,6 @@ func (s *Schema) ParseSchema(l *Lexer) {
 
 			switch x := l.ConsumeIdent(); x {
 
-			case "Mutation":
-				l.ConsumeToken('{')
-
-				for l.Peek() != '}' {
-					m := Mutation{}
-					m.Name = l.ConsumeIdent()
-					l.ConsumeToken('(')
-					for l.Peek() != ')' {
-						arg := Arg{}
-						arg.Param = l.ConsumeIdent()
-						l.ConsumeToken(':')
-						arg.Type = l.ConsumeIdent()
-						if x := l.sc.TokenText(); x == "!" {
-							arg.Null = false
-							l.ConsumeToken('!')
-						} else {
-							arg.Null = true
-						}
-
-						m.Args = append(m.Args, &arg)
-					}
-					l.ConsumeToken(')')
-					l.ConsumeToken(':')
-					r := Resp{}
-					if l.Peek() == '[' {
-						r.IsList = true
-						l.ConsumeToken('[')
-						r.Name = l.ConsumeIdent()
-						if x := l.sc.TokenText(); x == "!" {
-							r.Null = false
-							l.ConsumeToken('!')
-						} else {
-							r.Null = true
-						}
-						l.ConsumeToken(']')
-						if x := l.sc.TokenText(); x == "!" {
-							r.IsListNull = false
-							l.ConsumeToken('!')
-						} else {
-							r.IsListNull = true
-						}
-					} else {
-						r.IsList = false
-						r.IsListNull = false
-						r.Name = l.ConsumeIdent()
-						if x := l.sc.TokenText(); x == "!" {
-							r.Null = false
-							l.ConsumeToken('!')
-						} else {
-							r.Null = true
-						}
-					}
-					m.Resp = r
-					s.Mutations = append(s.Mutations, &m)
-				}
-				l.ConsumeToken('}')
-
 			case "Query":
 				l.ConsumeToken('{')
 
@@ -211,25 +175,7 @@ func (s *Schema) ParseSchema(l *Lexer) {
 					q := Query{}
 					q.Name = l.ConsumeIdent()
 
-					if l.Peek() == '(' {
-
-						l.ConsumeToken('(')
-						for l.Peek() != ')' {
-							arg := Arg{}
-							arg.Param = l.ConsumeIdent()
-							l.ConsumeToken(':')
-							arg.Type = l.ConsumeIdent()
-							if x := l.sc.TokenText(); x == "!" {
-								arg.Null = false
-								l.ConsumeToken('!')
-							} else {
-								arg.Null = false
-							}
-
-							q.Args = append(q.Args, &arg)
-						}
-						l.ConsumeToken(')')
-					}
+					q.Args = ParseArgument(l)
 
 					l.ConsumeToken(':')
 					r := Resp{}
@@ -262,7 +208,70 @@ func (s *Schema) ParseSchema(l *Lexer) {
 						}
 					}
 					q.Resp = r
+
+					if l.Peek() == '@' {
+						l.ConsumeToken('@')
+						l.ConsumeDirective()
+						d := Directive{l.GetBuffer()}
+						l.ConsumeWhitespace()
+						q.Directive = &d
+					}
+
 					s.Queries = append(s.Queries, &q)
+				}
+				l.ConsumeToken('}')
+
+			case "Mutation":
+				l.ConsumeToken('{')
+
+				for l.Peek() != '}' {
+					m := Mutation{}
+					m.Name = l.ConsumeIdent()
+
+					m.Args = ParseArgument(l)
+
+					l.ConsumeToken(':')
+					r := Resp{}
+					if l.Peek() == '[' {
+						r.IsList = true
+						l.ConsumeToken('[')
+						r.Name = l.ConsumeIdent()
+						if x := l.sc.TokenText(); x == "!" {
+							r.Null = false
+							l.ConsumeToken('!')
+						} else {
+							r.Null = true
+						}
+						l.ConsumeToken(']')
+						if x := l.sc.TokenText(); x == "!" {
+							r.IsListNull = false
+							l.ConsumeToken('!')
+						} else {
+							r.IsListNull = true
+						}
+					} else {
+						r.IsList = false
+						r.IsListNull = false
+						r.Name = l.ConsumeIdent()
+						if x := l.sc.TokenText(); x == "!" {
+							r.Null = false
+							l.ConsumeToken('!')
+						} else {
+							r.Null = true
+						}
+					}
+
+					m.Resp = r
+
+					if l.Peek() == '@' {
+						l.ConsumeToken('@')
+						l.ConsumeDirective()
+						d := Directive{l.GetBuffer()}
+						l.ConsumeWhitespace()
+						m.Directive = &d
+					}
+
+					s.Mutations = append(s.Mutations, &m)
 				}
 				l.ConsumeToken('}')
 
@@ -272,22 +281,9 @@ func (s *Schema) ParseSchema(l *Lexer) {
 				for l.Peek() != '}' {
 					c := Subscription{}
 					c.Name = l.ConsumeIdent()
-					l.ConsumeToken('(')
-					for l.Peek() != ')' {
-						arg := Arg{}
-						arg.Param = l.ConsumeIdent()
-						l.ConsumeToken(':')
-						arg.Type = l.ConsumeIdent()
-						if x := l.sc.TokenText(); x == "!" {
-							arg.Null = false
-							l.ConsumeToken('!')
-						} else {
-							arg.Null = true
-						}
 
-						c.Args = append(c.Args, &arg)
-					}
-					l.ConsumeToken(')')
+					c.Args = ParseArgument(l)
+
 					l.ConsumeToken(':')
 					r := Resp{}
 					if l.Peek() == '[' {
@@ -319,6 +315,15 @@ func (s *Schema) ParseSchema(l *Lexer) {
 						}
 					}
 					c.Resp = r
+
+					if l.Peek() == '@' {
+						l.ConsumeToken('@')
+						l.ConsumeDirective()
+						d := Directive{l.GetBuffer()}
+						l.ConsumeWhitespace()
+						c.Directive = &d
+					}
+
 					s.Subscriptions = append(s.Subscriptions, &c)
 				}
 				l.ConsumeToken('}')
@@ -327,6 +332,7 @@ func (s *Schema) ParseSchema(l *Lexer) {
 				t := TypeName{}
 				t.Name = x
 
+				// handling in case of type has implements
 				if l.Peek() == scanner.Ident {
 					l.ConsumeIdent()
 					t.Impl = true
@@ -341,6 +347,9 @@ func (s *Schema) ParseSchema(l *Lexer) {
 				for l.Peek() != '}' {
 					p := Prop{}
 					p.Name = l.ConsumeIdent()
+
+					p.Args = ParseArgument(l)
+
 					l.ConsumeToken(':')
 
 					if l.Peek() == '[' {
@@ -371,6 +380,15 @@ func (s *Schema) ParseSchema(l *Lexer) {
 							p.Null = true
 						}
 					}
+
+					if l.Peek() == '@' {
+						l.ConsumeToken('@')
+						l.ConsumeDirective()
+						d := Directive{l.GetBuffer()}
+						l.ConsumeWhitespace()
+						p.Directive = &d
+					}
+
 					t.Props = append(t.Props, &p)
 				}
 
@@ -499,4 +517,56 @@ func (s *Schema) UniqueInput(wg *sync.WaitGroup) {
 		j++
 	}
 	s.Inputs = s.Inputs[:j]
+}
+
+func ParseArgument(l *Lexer) []*Arg {
+	args := []*Arg{}
+
+	for l.Peek() == '(' {
+		l.ConsumeToken('(')
+		for l.Peek() != ')' {
+			arg := Arg{}
+			arg.Param = l.ConsumeIdent()
+			l.ConsumeToken(':')
+
+			if l.Peek() == '[' {
+				arg.IsList = true
+				l.ConsumeToken('[')
+				arg.Type = l.ConsumeIdent()
+				if l.Peek() == '!' {
+					arg.Null = false
+					l.ConsumeToken('!')
+				} else {
+					arg.Null = true
+				}
+				l.ConsumeToken(']')
+
+				if x := l.sc.TokenText(); x == "!" {
+					arg.IsListNull = false
+					l.ConsumeToken('!')
+				} else {
+					arg.IsListNull = true
+				}
+			} else {
+				arg.Type = l.ConsumeIdent()
+
+				if l.Peek() == '=' {
+					l.ConsumeToken('=')
+					ext := l.ConsumeIdent()
+					arg.TypeExt = &ext
+				}
+
+				if x := l.sc.TokenText(); x == "!" {
+					arg.Null = false
+					l.ConsumeToken('!')
+				} else {
+					arg.Null = true
+				}
+			}
+
+			args = append(args, &arg)
+		}
+		l.ConsumeToken(')')
+	}
+	return args
 }

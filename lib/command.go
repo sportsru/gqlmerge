@@ -40,29 +40,23 @@ Options:
 		NotEnoughArgs:    "❌ Not enough arguments",
 		OutputFileNeeded: "❌ Output file argument is needed",
 		WrongOption:      "❌ Wrong options",
-		Version:          "v0.1.2",
+		Version:          "v0.1.4",
 	}
 
 	// check the number of args
 	if len(c.Args) <= 1 {
-
 		// no arg -> print help msg
 		return fmt.Errorf(options.Help)
+	}
 
-	} else if len(c.Args) == 2 {
-
+	if len(c.Args) == 2 {
 		if strings.HasPrefix(c.Args[1], "-") {
-
-			if c.Args[1] == "-v" {
-
+			switch c.Args[1] {
+			case "-v":
 				return fmt.Errorf(options.Version)
-
-			} else if c.Args[1] == "-h" {
-
+			case "-h":
 				return fmt.Errorf(options.Help)
-
-			} else {
-
+			default:
 				return fmt.Errorf(options.WrongOption)
 			}
 		}
