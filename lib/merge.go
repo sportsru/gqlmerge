@@ -7,6 +7,29 @@ import (
 	"sync"
 )
 
+// Merge func to merge all the GraphQL files
+// Arguments:
+// - indent string : the padding to generate schema eg. "\t" or " "
+// - paths : A relative path to find *.graphql or *.gql files recursively
+func Merge(indent string, paths ...string) *string {
+	schemas := make([]Schema, 0, len(paths))
+
+	for _, path := range paths {
+		if sc := getSchema(path); sc != nil {
+			schemas = append(schemas, *sc)
+		}
+	}
+
+	if len(schemas) == 0 {
+		return nil
+	}
+
+	schema := joinSchemas(schemas)
+	ms := MergedSchema{Indent: indent}
+	ss := ms.StitchSchema(schema)
+	return &ss
+}
+
 func getSchema(path string) *Schema {
 	abs, err := filepath.Abs(path)
 	if err != nil {
@@ -47,10 +70,11 @@ func joinSchemas(schemas []Schema) *Schema {
 	}
 
 	wg := sync.WaitGroup{}
-	wg.Add(8)
+	wg.Add(9)
 
 	go schema.UniqueMutation(&wg)
 	go schema.UniqueQuery(&wg)
+	go schema.UniqueSubscription(&wg)
 	go schema.UniqueTypeName(&wg)
 	go schema.UniqueScalar(&wg)
 	go schema.UniqueEnum(&wg)

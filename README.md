@@ -2,6 +2,10 @@
 
 A tool to merge and stitch modularized GraphQL files into one schema file
 
+## Demo
+
+![Demo](/demo/gqlmerge_demo.gif)
+
 ## Stack
 
 - Built in Go
@@ -50,8 +54,11 @@ import gql "github.com/mattdamon108/gqlmerge/lib"
 func main(){
 	// ...
 
-	// path should be a relative path
-	schema := gql.Merge(path)
+	// "  " is indent for the padding in generating schema
+	// in case of using as go module, just " " would be fine
+	//
+	// paths should be a relative path
+	schema := gql.Merge(" ", path1, path2, ...)
 }
 ```
 
@@ -138,7 +145,7 @@ type User {
 ## How to use
 
 ```shell
-$ gqlmerge [PATH ...] [OUTPUT]
+$ gqlmerge --indent=2s [PATH ...] [OUTPUT]
 
 // PATH : directories with schema
 // OUTPUT : output file name
